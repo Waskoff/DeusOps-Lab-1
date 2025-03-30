@@ -1,0 +1,9 @@
+services:
+  mynginx:
+    build: .
+    container_name: mynginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ./default.conf:/etc/nginx/http.d/default.conf:ro  # Примонтировать вместо дефолтного
+      - ./html:/var/www/html:ro
