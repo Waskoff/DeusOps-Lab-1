@@ -1,25 +1,25 @@
 FROM alpine:3.16
 
-# Обновляем списки пакетов и устанавливаем nginx и libcap (для setcap)
-RUN apk update && apk add --no-cache nginx libcap
+# Объединяем установку пакетов, создание нужных директорий и нового пользователя
+RUN apk update && apk add --no-cache nginx \
+    && mkdir -p /var/www/html /etc/nginx/http.d \
+    && mkdir -p /var/lib/nginx/logs /var/lib/nginx/tmp/client_body \
+    && mkdir -p /var/log/nginx \
+    && mkdir -p /run/nginx \
+    && adduser -D -g 'abobus' abobus \
+    && chown -R abobus:abobus /var/lib/nginx /var/log/nginx /run/nginx
 
-# Устанавливаем capability для nginx, чтобы он мог привязываться к порту 80 даже от непривилегированного пользователя
-RUN setcap 'cap_net_bind_service=+ep' /usr/sbin/nginx
+# Копируем кастомный конфигурационный файл nginx
+COPY default.conf /etc/nginx/http.d/default.conf
 
-# Создаем каталоги для статических файлов и конфигурации nginx
-RUN mkdir -p /var/www/html /etc/nginx/conf.d
-
-# Копируем внешний конфигурационный файл, чтобы можно было изменять настройки без пересборки образа
-COPY default.conf /etc/nginx/conf.d/default.conf
-
-# Устанавливаем рабочую директорию для статических файлов
+# Устанавливаем рабочую директорию для статики
 WORKDIR /var/www/html
 
-# Открываем порт 80 внутри контейнера (этот порт будет проброшен на 8080)
-EXPOSE 80
+# Открываем порт 8080
+EXPOSE 8080
 
-# Переключаемся на пользователя nginx, чтобы работать от непривилегированного пользователя
-USER nginx
+# Запускаем контейнер от пользователя abobus
+USER abobus
 
-# Запускаем nginx в режиме foreground, чтобы контейнер не завершался сразу
+# Запускаем nginx в режиме foreground
 CMD ["nginx", "-g", "daemon off;"]
